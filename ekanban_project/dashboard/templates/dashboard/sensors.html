@@ -1,0 +1,183 @@
+{% extends 'dashboard/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Sensoren - eKanban{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <h1 class="mb-1">
+            <i class="bi bi-cpu"></i> Sensor Status
+        </h1>
+        <p class="text-muted">Spannung und Signalstärke der IoT-Sensoren überwachen</p>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="inventory-tab" href="{% url 'index' %}" role="tab">
+            <i class="bi bi-boxes"></i> Inventar
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="warenkorb-tab" href="{% url 'warenkorb' %}" role="tab">
+            <i class="bi bi-cart"></i> Warenkorb
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="sensors-tab" href="{% url 'sensors' %}" role="tab">
+            <i class="bi bi-cpu"></i> Sensoren
+        </a>
+    </li>
+</ul>
+
+<!-- Filter Section -->
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-6">
+            <form method="get" class="row g-3">
+                <div class="col-12">
+                    <label for="customerSelect" class="form-label">
+                        <strong>Kunde</strong>
+                    </label>
+                    <select class="form-select" id="customerSelect" name="customer" onchange="this.form.submit()">
+                        <option value="">-- Alle Kunden --</option>
+                        {% for customer in customers %}
+                            <option value="{{ customer }}" {% if customer == selected_customer %}selected{% endif %}>
+                                {{ customer }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if racks %}
+                <div class="col-12">
+                    <label for="rackSelect" class="form-label">
+                        <strong>Regal</strong>
+                    </label>
+                    <select class="form-select" id="rackSelect" name="rack" onchange="this.form.submit()">
+                        <option value="">-- Alle Regale --</option>
+                        {% for rack in racks %}
+                            <option value="{{ rack }}" {% if rack == selected_rack %}selected{% endif %}>
+                                {{ rack }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Sensor Data -->
+<div class="row">
+    {% if sensor_data %}
+        {% for item in sensor_data %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    Drum #{{ item.drum_id }} - {{ item.customer }}
+                    <small class="text-muted d-block">{{ item.rack }}</small>
+                </div>
+                <div class="card-body">
+                    <!-- Battery Voltage -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">
+                                <i class="bi bi-lightning-charge text-warning"></i> Batteriespannung
+                            </h6>
+                            <span class="badge bg-info">{{ item.avg_battery_voltage|floatformat:2 }} mV</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% with voltage_percent=item.avg_battery_voltage|mul:100|div:4096 %}
+                                {% if voltage_percent > 75 %}
+                                    <div class="progress-bar bg-success" style="width: 100%"></div>
+                                {% elif voltage_percent > 50 %}
+                                    <div class="progress-bar bg-warning" style="width: {{ voltage_percent|floatformat:0 }}%"></div>
+                                {% elif voltage_percent > 25 %}
+                                    <div class="progress-bar bg-danger" style="width: {{ voltage_percent|floatformat:0 }}%"></div>
+                                {% else %}
+                                    <div class="progress-bar bg-dark" style="width: {{ voltage_percent|floatformat:0 }}%"></div>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        <small class="text-muted d-block mt-2">Sollte über 3500 mV liegen</small>
+                    </div>
+                    
+                    <!-- Signal Strength -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">
+                                <i class="bi bi-wifi text-info"></i> Signalstärke
+                            </h6>
+                            <span class="badge bg-info">{{ item.avg_signal_strength }} dBm</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% if item.avg_signal_strength > -70 %}
+                                <div class="progress-bar bg-success" style="width: 100%"></div>
+                            {% elif item.avg_signal_strength > -85 %}
+                                <div class="progress-bar bg-warning" style="width: 75%"></div>
+                            {% elif item.avg_signal_strength > -100 %}
+                                <div class="progress-bar bg-danger" style="width: 50%"></div>
+                            {% else %}
+                                <div class="progress-bar bg-dark" style="width: 25%"></div>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted d-block mt-2">Optimal: > -70 dBm, Akzeptabel: > -85 dBm</small>
+                    </div>
+                    
+                    <!-- Product Info -->
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <small class="text-muted d-block mb-1"><strong>Product:</strong></small>
+                        <small>{{ item.product }}</small><br>
+                        <code style="font-size: 0.75rem;">{{ item.part_number }}</code>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <small class="text-muted">
+                        <i class="bi bi-graph-up"></i> R² = {{ item.r_squared|floatformat:4 }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center py-5" role="alert">
+                <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
+                <h5 class="mt-3 mb-1">Keine Sensordaten verfügbar</h5>
+                <p class="mb-0">Wählen Sie einen Kunden und Regal aus, um Sensordaten zu sehen.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Info Card -->
+<div class="card mt-5">
+    <div class="card-header">
+        <i class="bi bi-info-circle"></i> Sensor-Informationen
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="mb-3"><strong>Batteriespannung</strong></h6>
+                <ul class="list-unstyled">
+                    <li><span class="badge bg-success">Gut</span> &gt; 3500 mV</li>
+                    <li><span class="badge bg-warning">Warnung</span> 3200 - 3500 mV</li>
+                    <li><span class="badge bg-danger">Kritisch</span> &lt; 3200 mV</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="mb-3"><strong>Signalstärke (RSSI)</strong></h6>
+                <ul class="list-unstyled">
+                    <li><span class="badge bg-success">Exzellent</span> &gt; -70 dBm</li>
+                    <li><span class="badge bg-warning">Gut</span> -70 bis -85 dBm</li>
+                    <li><span class="badge bg-danger">Schwach</span> &lt; -85 dBm</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

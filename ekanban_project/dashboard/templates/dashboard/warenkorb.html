@@ -1,0 +1,287 @@
+{% extends 'dashboard/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Warenkorb - eKanban{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <h1 class="mb-1">
+            <i class="bi bi-cart"></i> Warenkorb
+        </h1>
+        <p class="text-muted">Automatische Bestellempfehlung basierend auf Vorhersagen und hypothetischem Kabelverbrauch</p>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="inventory-tab" href="{% url 'index' %}" role="tab">
+            <i class="bi bi-boxes"></i> Inventar
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="warenkorb-tab" href="{% url 'warenkorb' %}" role="tab">
+            <i class="bi bi-cart"></i> Warenkorb
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="sensors-tab" href="{% url 'sensors' %}" role="tab">
+            <i class="bi bi-cpu"></i> Sensoren
+        </a>
+    </li>
+</ul>
+
+<!-- Date Selector for Hypothetical Scenario -->
+<div class="card mb-4 mt-4">
+    <div class="card-header bg-info text-white">
+        <i class="bi bi-calendar-event"></i> Simulation - Hypothetisches Szenario
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <form method="get" class="row g-2">
+                    <div class="col-12">
+                        <label for="referenceDate" class="form-label">
+                            <strong>Bedatum für Berechnung</strong>
+                        </label>
+                        <input type="date" class="form-control" id="referenceDate" name="reference_date" value="{{ reference_date }}" onchange="this.form.submit()">
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-8">
+                <div class="alert alert-info mb-0" role="alert">
+                    <strong>Demo-Modus aktiv!</strong><br>
+                    <small>
+                        Zeigt Bestellempfehlungen für <strong>{{ reference_date_display }}</strong>.
+                        System berechnet hypothetischen Kabelverbrauch vom heutigen Tag bis zum ausgewählten Datum.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shopping Cart Summary -->
+{% if cart_items %}
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <i class="bi bi-check-circle"></i> Bestellempfehlung ({{ cart_items|length }} Artikel)
+        <span class="float-end">
+            <strong>{{ total_price }}€</strong> / {{ max_price }}€ Budget
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="progress mb-3" style="height: 25px;">
+            {% with price_percent=total_price|mul:100|div:max_price %}
+                {% if price_percent >= 100 %}
+                    <div class="progress-bar bg-danger" style="width: 100%; line-height: 25px; font-weight: bold; color: white;">
+                        {{ price_percent|floatformat:0 }}% - ÜBERSCHUSS
+                    </div>
+                {% elif price_percent >= 75 %}
+                    <div class="progress-bar bg-warning" style="width: {{ price_percent|floatformat:1 }}%; line-height: 25px; font-weight: bold; color: white;">
+                        {{ price_percent|floatformat:0 }}%
+                    </div>
+                {% else %}
+                    <div class="progress-bar bg-success" style="width: {{ price_percent|floatformat:1 }}%; line-height: 25px; font-weight: bold; color: white;">
+                        {{ price_percent|floatformat:0 }}%
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+        <p class="mb-0 text-muted">
+            <small>
+                <i class="bi bi-info-circle"></i>
+                Verbleibend: 
+                {% with remaining=max_price|mul:1|safe_add:0 %}
+                    {% if remaining >= total_price %}
+                        <strong class="text-success">{{ remaining|add:0|add:total_price|mul:-1|add:remaining }}€</strong>
+                    {% else %}
+                        <strong class="text-danger">Überschuss</strong>
+                    {% endif %}
+                {% endwith %}
+            </small>
+        </p>
+    </div>
+</div>
+
+<!-- Shopping Cart Items -->
+<div class="row">
+    {% for item in cart_items %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">{{ item.product_name|truncatewords:5 }}</h5>
+                <small class="text-muted">{{ item.part_number }}</small>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span><strong>Drum #{{ item.drum_id }}</strong></span>
+                    <span class="badge bg-info">{{ item.delivery_days }} Tage Lieferzeit</span>
+                </div>
+                
+                <!-- Current Stock Info -->
+                <div class="mb-3 p-2 bg-light rounded">
+                    <small class="text-muted d-block mb-1"><strong>Aktuelle Lagerbestände:</strong></small>
+                    <div class="d-flex justify-content-between">
+                        <span>aktuell</span>
+                        <strong>{{ item.current_stock_m|floatformat:1 }} m</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Schwelle</span>
+                        <strong>{{ item.threshold_m|floatformat:1 }} m</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Verbrauchsrate</span>
+                        <strong>{{ item.depletion_rate|floatformat:2 }} m/Tag</strong>
+                    </div>
+                </div>
+
+                <!-- Hypothetical Consumption -->
+                {% if item.consumption_data %}
+                <div class="mb-3 p-2 bg-warning bg-opacity-10 rounded">
+                    <small class="text-muted d-block mb-1"><strong>Prognose bis {{ reference_date_display }}:</strong></small>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Tage</span>
+                        <strong>{{ item.consumption_data.days_from_today }} Tage</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Verbrauch</span>
+                        <strong>{{ item.consumption_data.consumption_m }} m</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Verbleibend</span>
+                        {% if item.consumption_data.will_be_below_threshold %}
+                            <strong class="text-danger">{{ item.consumption_data.remaining_length_m }} m ⚠️</strong>
+                        {% else %}
+                            <strong class="text-success">{{ item.consumption_data.remaining_length_m }} m ✓</strong>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Order Recommendation -->
+                <hr>
+                
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-1"><strong>Bestellempfehlung:</strong></small>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Menge</span>
+                        <span>{{ item.units_needed }} Stk</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Gesamtlänge</span>
+                        <span>{{ item.total_length_m|floatformat:0 }} m</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Preis je Meter</span>
+                        <span>{{ item.price_per_meter|floatformat:2 }}€</span>
+                    </div>
+                </div>
+                
+                <div class="alert alert-success mb-0" role="alert">
+                    <strong>Gesamtpreis:</strong><br>
+                    <h4 class="mb-0">{{ item.item_price }}€</h4>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    Wird leer in: <strong>{{ item.days_until_empty|floatformat:0 }} Tagen</strong>
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Budget Summary -->
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white">
+        <i class="bi bi-currency-euro"></i> Budgetübersicht
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <strong>Gesamtbudget:</strong><br>
+                    <h5 class="text-success">{{ max_price }}€</h5>
+                </p>
+                <p class="mb-0">
+                    <strong>Geplante Ausgaben:</strong><br>
+                    <h5 class="text-primary">{{ total_price }}€</h5>
+                </p>
+            </div>
+            <div class="col-md-6">
+                {% with remaining=max_price %}
+                    <p class="mb-2">
+                        <strong>Verbleibend:</strong><br>
+                        {% with actual_remaining=remaining|add:0|mul:1|div:1 %}
+                            {% if total_price <= max_price %}
+                                <h5 class="text-success">{{ remaining|safe_add:total_price|mul:-1|add:remaining }}€ verfügbar</h5>
+                            {% else %}
+                                <h5 class="text-danger">{{ total_price|add:0|add:max_price|mul:-1 }}€ Überschuss</h5>
+                            {% endif %}
+                        {% endwith %}
+                    </p>
+                    <p class="mb-0">
+                        <strong>Artikel im Warenkorb:</strong><br>
+                        <h5>{{ cart_items|length }} Artikel</h5>
+                    </p>
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-success text-center py-5" role="alert">
+    <i class="bi bi-check-circle" style="font-size: 3rem;"></i>
+    <h4 class="mt-3 mb-1">Keine Bestellungen empfohlen</h4>
+    <p class="mb-2">Alle Kabeltrommeln haben ausreichend Lagerbestände bis zum {{ reference_date_display }}.</p>
+    <small class="text-muted">Ändern Sie das Datum, um ein anderes Szenario zu simulieren.</small>
+</div>
+{% endif %}
+
+<!-- Information Section -->
+<div class="card mt-5">
+    <div class="card-header">
+        <i class="bi bi-info-circle"></i> Funktionsweise der Berechnung
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="bi bi-calculator"></i> Verbrauchsberechnung</h6>
+                <small class="text-muted">
+                    System berechnet den hypothetischen Kabelverbrauch pro Trommel basierend auf der Depletionsrate (m/Tag).
+                    Der Verbrauch wird vom heutigen Datum bis zum ausgewählten Datum summiert.
+                </small>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-box-seam"></i> Bestelllogik</h6>
+                <small class="text-muted">
+                    Wenn eine Trommel bis zum angegebenen Datum unter die Bestellschwelle fällt, wird eine Nachbestellung empfohlen.
+                    Die Lieferzeit wird berücksichtigt (+2 Tage Puffer per Trommel).
+                </small>
+            </div>
+        </div>
+        <hr>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h6><i class="bi bi-cash-coin"></i> Budget-Constraint</h6>
+                <small class="text-muted">
+                    Bestellungen werden iterativ hinzugefügt bis der Preis das verfügbare Budget (500€) erreicht.
+                    Bei Überschuss wird die Bestellung trotzdem hinzugefügt, um Versorgungsengpässe zu vermeiden.
+                </small>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-calendar"></i> Demo-Modus</h6>
+                <small class="text-muted">
+                    Wählen Sie ein Datum oben aus, um zu simulieren, wie sich die Bestände und Bestellempfehlungen ändern würden.
+                    Dies ist für Planung und "Was-wäre-wenn"-Szenarien nützlich.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

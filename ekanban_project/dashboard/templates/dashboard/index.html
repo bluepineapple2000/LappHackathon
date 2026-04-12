@@ -1,0 +1,183 @@
+{% extends 'dashboard/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Dashboard - eKanban{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <h1 class="mb-1">
+            <i class="bi bi-graph-up"></i> Cable Inventory Dashboard
+        </h1>
+        <p class="text-muted">Real-time cable inventory status and depletion forecasts</p>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="inventory-tab" href="{% url 'index' %}" role="tab">
+            <i class="bi bi-boxes"></i> Inventory
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="warenkorb-tab" href="{% url 'warenkorb' %}" role="tab">
+            <i class="bi bi-cart"></i> Warenkorb
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="sensors-tab" href="{% url 'sensors' %}" role="tab">
+            <i class="bi bi-cpu"></i> Sensoren
+        </a>
+    </li>
+</ul>
+
+<!-- Filter Section -->
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-6">
+            <form method="get" class="row g-3">
+                <div class="col-12">
+                    <label for="customerSelect" class="form-label">
+                        <strong>Kunde</strong>
+                    </label>
+                    <select class="form-select" id="customerSelect" name="customer" onchange="this.form.submit()">
+                        <option value="">-- Alle Kunden --</option>
+                        {% for customer in customers %}
+                            <option value="{{ customer }}" {% if customer == selected_customer %}selected{% endif %}>
+                                {{ customer }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if racks %}
+                <div class="col-12">
+                    <label for="rackSelect" class="form-label">
+                        <strong>Regal</strong>
+                    </label>
+                    <select class="form-select" id="rackSelect" name="rack" onchange="this.form.submit()">
+                        <option value="">-- Alle Regale --</option>
+                        {% for rack in racks %}
+                            <option value="{{ rack }}" {% if rack == selected_rack %}selected{% endif %}>
+                                {{ rack }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Table -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-table"></i> Kabel Inventar
+        <span class="badge bg-secondary float-end">{{ inventory|length }} Artikel</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Drum ID</th>
+                    <th>Product</th>
+                    <th>Aktuelle Länge</th>
+                    <th>Prognose</th>
+                    <th>Tage bis Schwelle</th>
+                    <th>Verbrauchsrate</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if inventory %}
+                    {% for item in inventory %}
+                    <tr>
+                        <td>
+                            <strong>#{{ item.drum_id }}</strong>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ item.product }}</small><br>
+                            <code style="font-size: 0.8rem;">{{ item.part_number }}</code>
+                        </td>
+                        <td>
+                            <strong>{{ item.current_length_m|floatformat:1 }} m</strong>
+                        </td>
+                        <td>
+                            {{ item.forecast_length_m|floatformat:1 }} m
+                        </td>
+                        <td>
+                            {% if item.days_until_threshold %}
+                                <strong>{{ item.days_until_threshold|floatformat:0 }} Tage</strong>
+                                <div class="progress" style="height: 4px; margin-top: 0.25rem;">
+                                    {% if item.days_until_threshold > 30 %}
+                                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                                    {% elif item.days_until_threshold > 7 %}
+                                        <div class="progress-bar bg-warning" style="width: 66%"></div>
+                                    {% else %}
+                                        <div class="progress-bar bg-danger" style="width: 33%"></div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="badge bg-secondary">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ item.depletion_rate|floatformat:2 }} m/Tag
+                        </td>
+                        <td>
+                            {% if item.days_until_threshold <= 7 %}
+                                <span class="badge badge-status badge-critical">KRITISCH</span>
+                            {% elif item.days_until_threshold <= 30 %}
+                                <span class="badge badge-status badge-warning">WARNING</span>
+                            {% else %}
+                                <span class="badge badge-status badge-ok">OK</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i><br>
+                            Keine Daten verfügbar
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Info Cards -->
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="stat-box">
+            <i class="bi bi-boxes icon-stat"></i>
+            <h3>{{ inventory|length }}</h3>
+            <p>Aktive Trommeln</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-box">
+            <i class="bi bi-exclamation-triangle icon-stat"></i>
+            <h3>
+                {% with critical=inventory|length %}
+                    {% for item in inventory %}
+                        {% if item.days_until_threshold <= 7 %}0{% endif %}
+                    {% endfor %}
+                {% endwith %}
+            </h3>
+            <p>Kritisch</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-box">
+            <i class="bi bi-calendar-event icon-stat"></i>
+            <h3>{{ selected_customer|default:"Alle" }}</h3>
+            <p>Aktuelle Auswahl</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
