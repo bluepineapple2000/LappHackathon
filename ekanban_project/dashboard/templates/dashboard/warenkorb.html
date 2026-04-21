@@ -9,7 +9,7 @@
         <h1 class="mb-1">
             <i class="bi bi-cart"></i> Warenkorb
         </h1>
-        <p class="text-muted">Automatische Bestellempfehlung basierend auf Vorhersagen und hypothetischem Kabelverbrauch</p>
+        <p class="text-muted">Demo-Bestellung mit Zukunftsprognose, Warenkorb-Bearbeitung und Kostenlogik</p>
     </div>
 </div>
 
@@ -32,6 +32,13 @@
     </li>
 </ul>
 
+{% if checkout_success %}
+<div class="alert alert-success" role="alert">
+    <strong>Bestellung ausgeführt.</strong> Die bestellten Meter wurden den Trommeln als neue Verfügbarkeit hinzugefügt.
+    Diese Bestände werden jetzt in Inventar-, Sensor- und Prognoseansicht berücksichtigt.
+</div>
+{% endif %}
+
 <!-- Date Selector for Hypothetical Scenario -->
 <div class="card mb-4 mt-4">
     <div class="card-header bg-info text-white">
@@ -40,12 +47,36 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-4">
-                <form method="get" class="row g-2">
+                <form method="get" action="{% url 'warenkorb' %}" class="row g-2">
                     <div class="col-12">
                         <label for="referenceDate" class="form-label">
-                            <strong>Bedatum für Berechnung</strong>
+                            <strong>Referenzdatum für Berechnung</strong>
                         </label>
                         <input type="date" class="form-control" id="referenceDate" name="reference_date" value="{{ reference_date }}" onchange="this.form.submit()">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">
+                            <strong>Prognosemodus</strong>
+                        </label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="forecast_mode" id="defensiv" value="defensiv" {% if forecast_mode == 'defensiv' %}checked{% endif %} onchange="this.form.submit()">
+                            <label class="btn btn-outline-primary" for="defensiv">
+                                <i class="bi bi-shield"></i> Defensiv
+                                <small class="d-block" style="font-size: 0.75rem;">Schlechtester Fall</small>
+                            </label>
+
+                            <input type="radio" class="btn-check" name="forecast_mode" id="neutral" value="neutral" {% if forecast_mode == 'neutral' %}checked{% endif %} onchange="this.form.submit()">
+                            <label class="btn btn-outline-primary" for="neutral">
+                                <i class="bi bi-dash-circle"></i> Neutral
+                                <small class="d-block" style="font-size: 0.75rem;">Erwarteter Fall</small>
+                            </label>
+
+                            <input type="radio" class="btn-check" name="forecast_mode" id="offensiv" value="offensiv" {% if forecast_mode == 'offensiv' %}checked{% endif %} onchange="this.form.submit()">
+                            <label class="btn btn-outline-primary" for="offensiv">
+                                <i class="bi bi-rocket"></i> Offensiv
+                                <small class="d-block" style="font-size: 0.75rem;">Bester Fall</small>
+                            </label>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -53,8 +84,10 @@
                 <div class="alert alert-info mb-0" role="alert">
                     <strong>Demo-Modus aktiv!</strong><br>
                     <small>
-                        Zeigt Bestellempfehlungen für <strong>{{ reference_date_display }}</strong>.
-                        System berechnet hypothetischen Kabelverbrauch vom heutigen Tag bis zum ausgewählten Datum.
+                        Referenzdatum: <strong>{{ reference_date_display }}</strong> (Demo heute: <strong>{{ demo_today }}</strong>).
+                        Eine Risikoposition wird automatisch aufgenommen, wenn sie bis zum Referenzdatum unter Schwellwert ist
+                        oder wenn Lieferzeit + Prognosepuffer größer ist als die verbleibende Restlaufzeit.
+                        Wenn mindestens eine Risikoposition vorhanden ist, wird danach bis 500 EUR Warenwert aufgefuellt.
                     </small>
                 </div>
             </div>
@@ -62,21 +95,99 @@
     </div>
 </div>
 
-<!-- Shopping Cart Summary -->
+<div class="card mb-4">
+    <div class="card-header bg-warning bg-opacity-25">
+        <i class="bi bi-bug"></i> Debug Forecast - Trommeln mit hohem Risiko
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Drum</th>
+                        <th>Produkt</th>
+                        <th>Aktuell (m)</th>
+                        <th>Am {{ reference_date_display }} (m)</th>
+                        <th>Leer in (Tage)</th>
+                        <th>Lieferzeit</th>
+                        <th>Risiko-Fenster</th>
+                        <th>Grund</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if empty_soon_rows %}
+                        {% for row in empty_soon_rows %}
+                        <tr>
+                            <td><strong>#{{ row.drum_id }}</strong></td>
+                            <td>{{ row.product|truncatewords:4 }}</td>
+                            <td>{{ row.current_stock_m|floatformat:1 }}</td>
+                            <td>{{ row.hypothetical_remaining_m|floatformat:1 }}</td>
+                            <td>
+                                {% if row.days_until_empty_from_reference is not None %}
+                                    {{ row.days_until_empty_from_reference|floatformat:0 }}
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ row.delivery_days }} Tage</td>
+                            <td>{{ row.risk_window_days }} Tage</td>
+                            <td>{{ row.reason }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-3">
+                                Keine Trommeln mit unmittelbarem Risiko fuer das gewaehlte Referenzdatum.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-sliders"></i> Aktionen</span>
+        <small class="text-muted">Referenzdatum {{ reference_date_display }}</small>
+    </div>
+    <div class="card-body d-flex gap-2 flex-wrap">
+        <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reset_recommendations">
+            <input type="hidden" name="reference_date" value="{{ reference_date }}">
+            <input type="hidden" name="forecast_mode" value="{{ forecast_mode }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-magic"></i> Empfehlungen neu laden
+            </button>
+        </form>
+        <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="checkout">
+            <input type="hidden" name="reference_date" value="{{ reference_date }}">
+            <input type="hidden" name="forecast_mode" value="{{ forecast_mode }}">
+            <button type="submit" class="btn btn-success" {% if not cart_items %}disabled{% endif %}>
+                <i class="bi bi-bag-check"></i> Jetzt kaufen (Demo)
+            </button>
+        </form>
+    </div>
+</div>
+
 {% if cart_items %}
 <div class="card mb-4">
     <div class="card-header bg-success text-white">
-        <i class="bi bi-check-circle"></i> Bestellempfehlung ({{ cart_items|length }} Artikel)
+        <i class="bi bi-check-circle"></i> Warenkorb ({{ cart_items|length }} Positionen)
         <span class="float-end">
-            <strong>{{ total_price }}€</strong> / {{ max_price }}€ Budget
+            <strong>{{ totals.total|floatformat:2 }} EUR</strong> gesamt
         </span>
     </div>
     <div class="card-body">
         <div class="progress mb-3" style="height: 25px;">
-            {% with price_percent=total_price|mul:100|div:max_price %}
+            {% with price_percent=totals.subtotal|mul:100|div:target_value %}
                 {% if price_percent >= 100 %}
                     <div class="progress-bar bg-danger" style="width: 100%; line-height: 25px; font-weight: bold; color: white;">
-                        {{ price_percent|floatformat:0 }}% - ÜBERSCHUSS
+                        {{ price_percent|floatformat:0 }}% - Zielwert erreicht
                     </div>
                 {% elif price_percent >= 75 %}
                     <div class="progress-bar bg-warning" style="width: {{ price_percent|floatformat:1 }}%; line-height: 25px; font-weight: bold; color: white;">
@@ -89,19 +200,60 @@
                 {% endif %}
             {% endwith %}
         </div>
-        <p class="mb-0 text-muted">
-            <small>
-                <i class="bi bi-info-circle"></i>
-                Verbleibend: 
-                {% with remaining=max_price|mul:1|safe_add:0 %}
-                    {% if remaining >= total_price %}
-                        <strong class="text-success">{{ remaining|add:0|add:total_price|mul:-1|add:remaining }}€</strong>
-                    {% else %}
-                        <strong class="text-danger">Überschuss</strong>
-                    {% endif %}
-                {% endwith %}
-            </small>
-        </p>
+        <div class="row">
+            <div class="col-md-6">
+                <small class="text-muted d-block">Warenwert: <strong>{{ totals.subtotal|floatformat:2 }} EUR</strong></small>
+                <small class="text-muted d-block">Schnittkosten: <strong>{{ totals.cut_costs|floatformat:2 }} EUR</strong> ({{ totals.cut_positions }} Positionen)</small>
+            </div>
+            <div class="col-md-6">
+                <small class="text-muted d-block">Versand: <strong>{{ totals.shipping_cost|floatformat:2 }} EUR</strong> (ab {{ free_shipping_threshold }} EUR frei)</small>
+                <small class="text-muted d-block">Mindestbestellwert-Zuschlag: <strong>{{ totals.min_order_surcharge|floatformat:2 }} EUR</strong> (unter {{ min_order_value }} EUR)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-table"></i> Recalc fuer gewaehltes Datum
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Drum</th>
+                        <th>Aktuell (m)</th>
+                        <th>Hypothetisch am {{ reference_date_display }} (m)</th>
+                        <th>Leer in (Tage)</th>
+                        <th>Grund</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                    <tr>
+                        <td><strong>#{{ item.drum_id }}</strong></td>
+                        <td>{{ item.current_stock_m|floatformat:1 }}</td>
+                        <td>
+                            {% if item.hypothetical_remaining_m is not None %}
+                                <strong>{{ item.hypothetical_remaining_m|floatformat:1 }}</strong>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.days_until_empty_from_reference is not None %}
+                                {{ item.days_until_empty_from_reference|floatformat:0 }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.reason }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -119,6 +271,17 @@
                     <span><strong>Drum #{{ item.drum_id }}</strong></span>
                     <span class="badge bg-info">{{ item.delivery_days }} Tage Lieferzeit</span>
                 </div>
+
+                <div class="alert alert-danger py-2 mb-3" role="alert">
+                    <strong>
+                        Leer in:
+                        {% if item.days_until_empty_from_reference is not None %}
+                            {{ item.days_until_empty_from_reference|floatformat:0 }} Tagen
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </strong>
+                </div>
                 
                 <!-- Current Stock Info -->
                 <div class="mb-3 p-2 bg-light rounded">
@@ -126,10 +289,6 @@
                     <div class="d-flex justify-content-between">
                         <span>aktuell</span>
                         <strong>{{ item.current_stock_m|floatformat:1 }} m</strong>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Schwelle</span>
-                        <strong>{{ item.threshold_m|floatformat:1 }} m</strong>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span>Verbrauchsrate</span>
@@ -164,29 +323,73 @@
                 <hr>
                 
                 <div class="mb-3">
-                    <small class="text-muted d-block mb-1"><strong>Bestellempfehlung:</strong></small>
+                    <small class="text-muted d-block mb-1"><strong>Bestellposition:</strong></small>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Menge</span>
-                        <span>{{ item.units_needed }} Stk</span>
+                        <span>Grund für Aufnahme</span>
+                        <span>{{ item.reason }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Gesamtlänge</span>
-                        <span>{{ item.total_length_m|floatformat:0 }} m</span>
+                        <span>Verpackungseinheit</span>
+                        <span>{{ item.packaging_unit_m|floatformat:0 }} m</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Preis je Meter</span>
-                        <span>{{ item.price_per_meter|floatformat:2 }}€</span>
+                        <span>{{ item.price_per_meter|floatformat:2 }} EUR</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Bestelllänge (m)</strong></label>
+                    <div class="d-flex gap-2">
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="decrease_length">
+                            <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                            <input type="hidden" name="reference_date" value="{{ reference_date }}">
+                            <input type="hidden" name="forecast_mode" value="{{ forecast_mode }}">
+                            <button class="btn btn-outline-secondary" type="submit">-</button>
+                        </form>
+
+                        <form method="post" class="d-flex gap-2 flex-grow-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_length">
+                            <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                            <input type="hidden" name="reference_date" value="{{ reference_date }}">
+                            <input type="hidden" name="forecast_mode" value="{{ forecast_mode }}">
+                            <input type="number" class="form-control" step="1" min="1" name="order_length_m" value="{{ item.order_length_m|floatformat:0 }}">
+                            <button class="btn btn-outline-primary" type="submit">Setzen</button>
+                        </form>
+
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="increase_length">
+                            <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                            <input type="hidden" name="reference_date" value="{{ reference_date }}">
+                            <input type="hidden" name="forecast_mode" value="{{ forecast_mode }}">
+                            <button class="btn btn-outline-secondary" type="submit">+</button>
+                        </form>
                     </div>
                 </div>
                 
-                <div class="alert alert-success mb-0" role="alert">
-                    <strong>Gesamtpreis:</strong><br>
-                    <h4 class="mb-0">{{ item.item_price }}€</h4>
+                <div class="alert alert-success mb-2" role="alert">
+                    <strong>Position:</strong><br>
+                    <h5 class="mb-0">{{ item.order_length_m|floatformat:0 }} m = {{ item.order_length_m|mul:item.price_per_meter|floatformat:2 }} EUR</h5>
                 </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="remove_item">
+                    <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                    <input type="hidden" name="reference_date" value="{{ reference_date }}">
+                    <input type="hidden" name="forecast_mode" value="{{ forecast_mode }}">
+                    <button class="btn btn-outline-danger btn-sm" type="submit">
+                        <i class="bi bi-trash"></i> Aus Warenkorb entfernen
+                    </button>
+                </form>
             </div>
             <div class="card-footer">
                 <small class="text-muted">
-                    Wird leer in: <strong>{{ item.days_until_empty|floatformat:0 }} Tagen</strong>
+                    Referenzdatum: <strong>{{ reference_date_display }}</strong>
                 </small>
             </div>
         </div>
@@ -197,37 +400,29 @@
 <!-- Budget Summary -->
 <div class="card mt-4">
     <div class="card-header bg-primary text-white">
-        <i class="bi bi-currency-euro"></i> Budgetübersicht
+        <i class="bi bi-currency-euro"></i> Kostenübersicht
     </div>
     <div class="card-body">
         <div class="row">
             <div class="col-md-6">
                 <p class="mb-2">
-                    <strong>Gesamtbudget:</strong><br>
-                    <h5 class="text-success">{{ max_price }}€</h5>
+                    <strong>Ziel-Warenwert:</strong><br>
+                    <h5 class="text-success">{{ target_value }} EUR</h5>
                 </p>
                 <p class="mb-0">
-                    <strong>Geplante Ausgaben:</strong><br>
-                    <h5 class="text-primary">{{ total_price }}€</h5>
+                    <strong>Warenwert:</strong><br>
+                    <h5 class="text-primary">{{ totals.subtotal|floatformat:2 }} EUR</h5>
                 </p>
             </div>
             <div class="col-md-6">
-                {% with remaining=max_price %}
-                    <p class="mb-2">
-                        <strong>Verbleibend:</strong><br>
-                        {% with actual_remaining=remaining|add:0|mul:1|div:1 %}
-                            {% if total_price <= max_price %}
-                                <h5 class="text-success">{{ remaining|safe_add:total_price|mul:-1|add:remaining }}€ verfügbar</h5>
-                            {% else %}
-                                <h5 class="text-danger">{{ total_price|add:0|add:max_price|mul:-1 }}€ Überschuss</h5>
-                            {% endif %}
-                        {% endwith %}
-                    </p>
-                    <p class="mb-0">
-                        <strong>Artikel im Warenkorb:</strong><br>
-                        <h5>{{ cart_items|length }} Artikel</h5>
-                    </p>
-                {% endwith %}
+                <p class="mb-2">
+                    <strong>Noch bis versandkostenfrei:</strong><br>
+                    <h5 class="text-warning">{{ totals.remaining_to_free_shipping|floatformat:2 }} EUR</h5>
+                </p>
+                <p class="mb-0">
+                    <strong>Gesamt inkl. Zuschläge:</strong><br>
+                    <h5 class="text-danger">{{ totals.total|floatformat:2 }} EUR</h5>
+                </p>
             </div>
         </div>
     </div>
@@ -236,9 +431,9 @@
 {% else %}
 <div class="alert alert-success text-center py-5" role="alert">
     <i class="bi bi-check-circle" style="font-size: 3rem;"></i>
-    <h4 class="mt-3 mb-1">Keine Bestellungen empfohlen</h4>
-    <p class="mb-2">Alle Kabeltrommeln haben ausreichend Lagerbestände bis zum {{ reference_date_display }}.</p>
-    <small class="text-muted">Ändern Sie das Datum, um ein anderes Szenario zu simulieren.</small>
+    <h4 class="mt-3 mb-1">Warenkorb ist leer</h4>
+    <p class="mb-2">Sie koennen Empfehlungen neu laden oder haben bereits gekauft.</p>
+    <small class="text-muted">Nach einem Kauf wurden die Trommeln bereits mit neuer Laenge aufgefuellt.</small>
 </div>
 {% endif %}
 
@@ -259,8 +454,9 @@
             <div class="col-md-6">
                 <h6><i class="bi bi-box-seam"></i> Bestelllogik</h6>
                 <small class="text-muted">
-                    Wenn eine Trommel bis zum angegebenen Datum unter die Bestellschwelle fällt, wird eine Nachbestellung empfohlen.
-                    Die Lieferzeit wird berücksichtigt (+2 Tage Puffer per Trommel).
+                    Eine Trommel wird aufgenommen, wenn Lieferzeit + Prognosepuffer größer ist als verbleibende Tage.
+                    Prognosepuffer: Defensiv +10 Tage, Neutral +5 Tage, Offensiv +2 Tage.
+                    Anschliessend wird der Warenkorb im Demo-Modus bis 500 EUR Warenwert aufgefuellt.
                 </small>
             </div>
         </div>
@@ -269,15 +465,16 @@
             <div class="col-md-6">
                 <h6><i class="bi bi-cash-coin"></i> Budget-Constraint</h6>
                 <small class="text-muted">
-                    Bestellungen werden iterativ hinzugefügt bis der Preis das verfügbare Budget (500€) erreicht.
-                    Bei Überschuss wird die Bestellung trotzdem hinzugefügt, um Versorgungsengpässe zu vermeiden.
+                    Versandkostenfrei ab 500 EUR Warenwert, sonst +25 EUR Versand.
+                    Unter 150 EUR Warenwert kommt ein Zuschlag von +20 EUR hinzu.
+                    Nicht-Standardlaengen (100/500/1000 m) erzeugen +20 EUR Schnittkosten pro Position.
                 </small>
             </div>
             <div class="col-md-6">
                 <h6><i class="bi bi-calendar"></i> Demo-Modus</h6>
                 <small class="text-muted">
-                    Wählen Sie ein Datum oben aus, um zu simulieren, wie sich die Bestände und Bestellempfehlungen ändern würden.
-                    Dies ist für Planung und "Was-wäre-wenn"-Szenarien nützlich.
+                    Beim Klick auf "Jetzt kaufen" werden die bestellten Meter den zugehoerigen Trommeln zugeschlagen.
+                    Dadurch werden die Bestände in der Zukunftssimulation erhoeht und koennen spaeter erneut leerlaufen.
                 </small>
             </div>
         </div>

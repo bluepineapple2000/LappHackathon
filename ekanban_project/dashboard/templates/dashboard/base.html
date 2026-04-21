@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,200 +8,224 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         :root {
-            --lapp-red: #E31E24;
-            --lapp-dark: #1a1a1a;
-            --lapp-light: #f5f5f5;
+            --lapp-orange: #F2761C;
+            --lapp-contrast: #2F4858;
+            --sidebar-bg: #f7f7f7;
+            --sidebar-border: #e0e0e0;
+            --sidebar-text: #222;
+            --sidebar-section: #eaeaea;
+            --topbar-height: 54px;
+
+            /* Override Bootstrap default primary blue (#0d6efd) */
+            --bs-primary: var(--lapp-contrast);
+            --bs-primary-rgb: 47, 72, 88;
+            --bs-link-color: var(--lapp-contrast);
+            --bs-link-hover-color: #243947;
         }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--lapp-light);
-        }
-        
-        .navbar {
-            background-color: var(--lapp-dark);
-            border-bottom: 3px solid var(--lapp-red);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--lapp-red) !important;
-            letter-spacing: 0.5px;
-        }
-        
-        .navbar-brand i {
-            margin-right: 0.5rem;
-        }
-        
-        .nav-tabs {
-            border-bottom: 2px solid #dee2e6;
-            margin-bottom: 2rem;
-        }
-        
-        .nav-tabs .nav-link {
-            color: #6c757d;
-            border: none;
-            border-bottom: 3px solid transparent;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-tabs .nav-link:hover {
-            color: var(--lapp-red);
-            border-bottom-color: var(--lapp-red);
-        }
-        
-        .nav-tabs .nav-link.active {
-            color: var(--lapp-red);
-            background-color: transparent;
-            border-bottom-color: var(--lapp-red);
-        }
-        
-        .card {
-            border: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border-top: 4px solid var(--lapp-red);
-        }
-        
-        .card-header {
-            background-color: var(--lapp-light);
-            border-bottom: 1px solid #dee2e6;
-            font-weight: 600;
-            color: var(--lapp-dark);
-        }
-        
-        .badge-status {
-            font-size: 0.85rem;
-            padding: 0.5rem 0.75rem;
-        }
-        
-        .badge-critical {
-            background-color: #dc3545;
-        }
-        
-        .badge-warning {
-            background-color: #ffc107;
-            color: #000;
-        }
-        
-        .badge-ok {
-            background-color: #28a745;
-        }
-        
-        .btn-primary {
-            background-color: var(--lapp-red);
-            border-color: var(--lapp-red);
-        }
-        
-        .btn-primary:hover {
-            background-color: #c1181d;
-            border-color: #c1181d;
-        }
-        
-        .filter-section {
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .table thead {
-            background-color: var(--lapp-light);
-        }
-        
-        .table tbody tr {
-            transition: background-color 0.2s ease;
-        }
-        
-        .table tbody tr:hover {
-            background-color: rgba(227, 30, 36, 0.05);
-        }
-        
-        .icon-stat {
-            font-size: 2rem;
-            color: var(--lapp-red);
-        }
-        
-        .stat-box {
-            text-align: center;
-            padding: 1.5rem;
-            background-color: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .stat-box h3 {
-            color: var(--lapp-dark);
-            font-weight: 700;
-            margin-top: 0.5rem;
-        }
-        
-        .stat-box p {
-            color: #6c757d;
-            font-size: 0.9rem;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
             margin: 0;
         }
-        
-        .progress-bar {
-            background-color: var(--lapp-red);
+        .topbar {
+            height: var(--topbar-height);
+            background: #fff;
+            border-bottom: 2px solid var(--lapp-orange);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            z-index: 100;
         }
-        
-        @media (max-width: 768px) {
-            .nav-tabs {
-                flex-direction: column;
+        .topbar-logo {
+            color: var(--lapp-orange);
+            font-weight: bold;
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+            margin-right: 1rem;
+        }
+        .topbar-title {
+            color: #888;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+        .topbar-demo-date {
+            margin-left: auto;
+            color: #4e3d30;
+            background: #fff3e8;
+            border: 1px solid #f2d0b2;
+            border-radius: 999px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .sidebar {
+            position: fixed;
+            top: var(--topbar-height);
+            left: 0;
+            width: 240px;
+            height: calc(100vh - var(--topbar-height));
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--sidebar-border);
+            padding: 1.5rem 0.5rem 1rem 0.5rem;
+            overflow-y: auto;
+            z-index: 99;
+        }
+        .sidebar-section {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--lapp-orange);
+            margin: 1.5rem 0 0.5rem 1.2rem;
+            text-transform: uppercase;
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 6px;
+            margin-bottom: 2px;
+            font-size: 1rem;
+            transition: background 0.15s;
+        }
+        .sidebar-link.active, .sidebar-link:hover {
+            background: #ffe7d1;
+            color: var(--lapp-orange);
+        }
+        .sidebar-link i {
+            margin-right: 0.7rem;
+            font-size: 1.1rem;
+        }
+        .main-content {
+            margin-left: 240px;
+            padding: 2.5rem 2rem 2rem 2rem;
+        }
+        .card {
+            border: none;
+            border-radius: 0.6rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+            margin-bottom: 2rem;
+        }
+        .card-header {
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+            color: #333;
+        }
+        .progress-bar {
+            background-color: var(--lapp-orange);
+        }
+        .btn-primary, .btn-outline-primary {
+            background-color: var(--lapp-orange);
+            border-color: var(--lapp-orange);
+        }
+        .btn-primary:hover, .btn-outline-primary:hover {
+            background-color: #d96917;
+            border-color: #d96917;
+        }
+
+        /* Ensure prognose mode labels are never Bootstrap blue */
+        .btn-outline-primary {
+            color: #4e3d30;
+            background-color: #fff;
+            border-color: #d9b18f;
+        }
+
+        .btn-outline-primary:hover {
+            color: #4e3d30;
+            background-color: #fff3e8;
+            border-color: #c58a57;
+        }
+
+        .btn-check:checked + .btn-outline-primary,
+        .btn-check:active + .btn-outline-primary {
+            color: #fff;
+            background-color: var(--lapp-orange);
+            border-color: var(--lapp-orange);
+        }
+
+        .btn-check:focus + .btn-outline-primary,
+        .btn-outline-primary:focus {
+            box-shadow: 0 0 0 0.2rem rgba(242, 118, 28, 0.25);
+        }
+
+        /* High-specificity override for Prognosemodus groups to prevent any blue hover state */
+        .btn-group .btn-outline-primary,
+        .btn-group .btn-outline-primary:hover,
+        .btn-group .btn-outline-primary:active,
+        .btn-group .btn-outline-primary:focus {
+            color: #4e3d30 !important;
+            border-color: #d9b18f !important;
+            background-color: #fff !important;
+        }
+
+        .btn-group .btn-outline-primary:hover {
+            background-color: #fff3e8 !important;
+            border-color: #c58a57 !important;
+        }
+
+        .btn-group .btn-check:checked + .btn-outline-primary,
+        .btn-group .btn-check:active + .btn-outline-primary {
+            color: #fff !important;
+            background-color: var(--lapp-orange) !important;
+            border-color: var(--lapp-orange) !important;
+        }
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 60px;
+                padding: 1rem 0.2rem;
             }
-            
-            .nav-tabs .nav-link {
-                border-left: 3px solid transparent;
-                border-bottom: none;
+            .main-content {
+                margin-left: 60px;
+                padding: 1.2rem 0.5rem;
             }
-            
-            .nav-tabs .nav-link.active {
-                border-left-color: var(--lapp-red);
+            .sidebar-link span {
+                display: none;
             }
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'index' %}">
-                <i class="bi bi-box-seam"></i>eKanban
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <span class="navbar-text text-light">Lapp Group - Cable Management System</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
+    <!-- Topbar -->
+    <div class="topbar">
+        <span class="topbar-logo">LAPP <span style="color:#888;font-weight:400;">eKanban</span></span>
+        <span class="topbar-title">Kabelmanagement & Prognoseplattform</span>
+        <span class="topbar-demo-date">Demo-Datum: 22.04.2026</span>
+    </div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-section">Mandant</div>
+        <a href="#" class="sidebar-link"><i class="bi bi-building"></i> <span>Lapp / LappTest 2026</span></a>
+        <div class="sidebar-section">Dashboard</div>
+        <a href="{% url 'index' %}" class="sidebar-link{% if request.resolver_match.url_name == 'index' %} active{% endif %}"><i class="bi bi-speedometer2"></i> <span>Dashboard</span></a>
+        <div class="sidebar-section">Kunden</div>
+        <a href="#" class="sidebar-link"><i class="bi bi-people"></i> <span>Übersicht Kunden</span></a>
+        <a href="#" class="sidebar-link"><i class="bi bi-box"></i> <span>Übersicht Kostenstellen</span></a>
+        <div class="sidebar-section">Artikel</div>
+        <a href="#" class="sidebar-link"><i class="bi bi-box-seam"></i> <span>Übersicht Artikel</span></a>
+        <a href="#" class="sidebar-link"><i class="bi bi-list-check"></i> <span>Inventar-Status</span></a>
+        <div class="sidebar-section">Netzwerk</div>
+        <a href="#" class="sidebar-link"><i class="bi bi-hdd-network"></i> <span>Geräteübersicht</span></a>
+        <a href="#" class="sidebar-link"><i class="bi bi-diagram-3"></i> <span>Netzwerkübersicht</span></a>
+        <div class="sidebar-section">Dokumentation</div>
+        <a href="#" class="sidebar-link"><i class="bi bi-journal-text"></i> <span>Web-UI</span></a>
+        <a href="#" class="sidebar-link"><i class="bi bi-code-slash"></i> <span>Web-API</span></a>
+        <div class="sidebar-section">Einstellungen</div>
+        <a href="#" class="sidebar-link"><i class="bi bi-gear"></i> <span>Einstellungen</span></a>
     </nav>
 
     <!-- Main Content -->
-    <div class="container my-5">
+    <div class="main-content">
         {% block content %}{% endblock %}
     </div>
 
     <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-0"><strong>eKanban</strong> - Cable Inventory & Forecasting System</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-0">© 2026 Lapp Group. All rights reserved.</p>
-                </div>
-            </div>
+    <footer class="text-center py-4 mt-5" style="background:#fff; color:#888; border-top:1px solid #eee; margin-left:240px;">
+        <div style="max-width:1200px; margin:auto;">
+            <span><strong>LAPP eKanban</strong> &copy; 2026 Lapp Group. Alle Rechte vorbehalten.</span>
         </div>
     </footer>
 

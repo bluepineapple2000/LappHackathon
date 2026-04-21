@@ -65,6 +65,30 @@
                     </select>
                 </div>
                 {% endif %}
+                <div class="col-12">
+                    <label class="form-label">
+                        <strong>Prognosemodus</strong>
+                    </label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="forecast_mode" id="defensiv" value="defensiv" {% if forecast_mode == 'defensiv' %}checked{% endif %} onchange="this.form.submit()">
+                        <label class="btn btn-outline-primary" for="defensiv">
+                            <i class="bi bi-shield"></i> Defensiv
+                            <small class="d-block" style="font-size: 0.75rem;">Schlechtester Fall</small>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="forecast_mode" id="neutral" value="neutral" {% if forecast_mode == 'neutral' %}checked{% endif %} onchange="this.form.submit()">
+                        <label class="btn btn-outline-primary" for="neutral">
+                            <i class="bi bi-dash-circle"></i> Neutral
+                            <small class="d-block" style="font-size: 0.75rem;">Erwarteter Fall</small>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="forecast_mode" id="offensiv" value="offensiv" {% if forecast_mode == 'offensiv' %}checked{% endif %} onchange="this.form.submit()">
+                        <label class="btn btn-outline-primary" for="offensiv">
+                            <i class="bi bi-rocket"></i> Offensiv
+                            <small class="d-block" style="font-size: 0.75rem;">Bester Fall</small>
+                        </label>
+                    </div>
+                </div>
             </form>
         </div>
     </div>

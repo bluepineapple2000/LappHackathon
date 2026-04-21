@@ -7,9 +7,9 @@
 <div class="row mb-4">
     <div class="col-lg-12">
         <h1 class="mb-1">
-            <i class="bi bi-graph-up"></i> Cable Inventory Dashboard
+            <i class="bi bi-graph-up"></i> Kabelbestand-Dashboard
         </h1>
-        <p class="text-muted">Real-time cable inventory status and depletion forecasts</p>
+        <p class="text-muted">Echtzeit-Kabelbestand und Verbrauchsprognosen</p>
     </div>
 </div>
 
@@ -17,7 +17,7 @@
 <ul class="nav nav-tabs" role="tablist">
     <li class="nav-item" role="presentation">
         <a class="nav-link active" id="inventory-tab" href="{% url 'index' %}" role="tab">
-            <i class="bi bi-boxes"></i> Inventory
+            <i class="bi bi-boxes"></i> Inventar
         </a>
     </li>
     <li class="nav-item" role="presentation">
@@ -65,6 +65,16 @@
                     </select>
                 </div>
                 {% endif %}
+                <div class="col-12">
+                    <label class="form-label">
+                        <strong>Prognosemodus</strong>
+                    </label>
+                    <div class="alert alert-secondary mb-0">
+                        <small>
+                            Prognosemodus kann pro Trommel angewendet werden.
+                        </small>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
@@ -81,11 +91,11 @@
             <thead>
                 <tr>
                     <th>Drum ID</th>
-                    <th>Product</th>
-                    <th>Aktuelle Länge</th>
-                    <th>Prognose</th>
-                    <th>Tage bis Schwelle</th>
+                    <th>Produkt</th>
+                    <th>Kabelmeter aktuell</th>
+                    <th>Leer in (Tage)</th>
                     <th>Verbrauchsrate</th>
+                    <th>Prognosemodus (pro Trommel)</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -104,32 +114,28 @@
                             <strong>{{ item.current_length_m|floatformat:1 }} m</strong>
                         </td>
                         <td>
-                            {{ item.forecast_length_m|floatformat:1 }} m
-                        </td>
-                        <td>
-                            {% if item.days_until_threshold %}
+                            {% if item.days_until_threshold is not None %}
                                 <strong>{{ item.days_until_threshold|floatformat:0 }} Tage</strong>
-                                <div class="progress" style="height: 4px; margin-top: 0.25rem;">
-                                    {% if item.days_until_threshold > 30 %}
-                                        <div class="progress-bar bg-success" style="width: 100%"></div>
-                                    {% elif item.days_until_threshold > 7 %}
-                                        <div class="progress-bar bg-warning" style="width: 66%"></div>
-                                    {% else %}
-                                        <div class="progress-bar bg-danger" style="width: 33%"></div>
-                                    {% endif %}
-                                </div>
                             {% else %}
-                                <span class="badge bg-secondary">N/A</span>
+                                <span class="text-muted">N/A</span>
                             {% endif %}
                         </td>
                         <td>
                             {{ item.depletion_rate|floatformat:2 }} m/Tag
                         </td>
                         <td>
+                            <select class="form-select form-select-sm" aria-label="Prognosemodus für Trommel {{ item.drum_id }}">
+                                <option selected>Neutral (Standard)</option>
+                                <option>Defensiv</option>
+                                <option>Offensiv</option>
+                            </select>
+                            <small class="text-muted">Nur Option, aktuell nicht aktiv</small>
+                        </td>
+                        <td>
                             {% if item.days_until_threshold <= 7 %}
                                 <span class="badge badge-status badge-critical">KRITISCH</span>
                             {% elif item.days_until_threshold <= 30 %}
-                                <span class="badge badge-status badge-warning">WARNING</span>
+                                <span class="badge badge-status badge-warning">WARNUNG</span>
                             {% else %}
                                 <span class="badge badge-status badge-ok">OK</span>
                             {% endif %}
