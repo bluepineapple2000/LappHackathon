@@ -7,6 +7,7 @@ from .utils import (
     get_racks_for_customer,
     get_shopping_cart_recommendations,
     get_empty_soon_forecast,
+    get_zero_usage_today,
     calculate_hypothetical_consumption,
     calculate_days_until_threshold,
     calculate_cart_totals,
@@ -246,5 +247,15 @@ def warenkorb(request):
         'checkout_success': checkout_success,
     }
     return render(request, 'dashboard/warenkorb.html', context)
+
+
+def warnsystem(request):
+    """Warning system for production management: drums with zero usage today."""
+    zero_usage_drums = get_zero_usage_today()
+    context = {
+        'zero_usage_drums': zero_usage_drums,
+        'demo_today': DEMO_TODAY.strftime('%d.%m.%Y'),
+    }
+    return render(request, 'dashboard/warnsystem.html', context)
 
 

@@ -201,6 +201,7 @@
         <a href="#" class="sidebar-link"><i class="bi bi-building"></i> <span>Lapp / LappTest 2026</span></a>
         <div class="sidebar-section">Dashboard</div>
         <a href="{% url 'index' %}" class="sidebar-link{% if request.resolver_match.url_name == 'index' %} active{% endif %}"><i class="bi bi-speedometer2"></i> <span>Dashboard</span></a>
+        <a href="{% url 'warnsystem' %}" class="sidebar-link{% if request.resolver_match.url_name == 'warnsystem' %} active{% endif %}"><i class="bi bi-exclamation-triangle"></i> <span>Warnsystem</span></a>
         <div class="sidebar-section">Kunden</div>
         <a href="#" class="sidebar-link"><i class="bi bi-people"></i> <span>Übersicht Kunden</span></a>
         <a href="#" class="sidebar-link"><i class="bi bi-box"></i> <span>Übersicht Kostenstellen</span></a>

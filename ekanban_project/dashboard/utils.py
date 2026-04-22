@@ -478,6 +478,66 @@ def calculate_cart_totals(cart_items):
     }
 
 
+def get_zero_usage_today():
+    """Return drums that had 0m usage on demo-today compared to previous day."""
+    data = load_forecast_data() + load_rack_data()
+    if not data:
+        return []
+
+    df = pd.DataFrame(data)
+    required_cols = {
+        'drum_id', 'tenant', 'rack', 'product', 'part_number',
+        'date', 'daily_avg_cable_length_m', 'order_threshold_m',
+        'avg_battery_voltage', 'avg_signal_strength',
+    }
+    if not required_cols.issubset(df.columns):
+        return []
+
+    today = DEMO_TODAY.date()
+    previous_day = today - timedelta(days=1)
+
+    df = df.copy()
+    df['date'] = pd.to_datetime(df['date'], errors='coerce').dt.date
+    df['daily_avg_cable_length_m'] = pd.to_numeric(df['daily_avg_cable_length_m'], errors='coerce')
+
+    today_rows = df[df['date'] == today].copy()
+    previous_rows = df[df['date'] == previous_day].copy()
+    if today_rows.empty or previous_rows.empty:
+        return []
+
+    previous_rows = previous_rows[['drum_id', 'daily_avg_cable_length_m']].rename(
+        columns={'daily_avg_cable_length_m': 'previous_avg_length_m'}
+    )
+    merged = today_rows.merge(previous_rows, on='drum_id', how='left')
+    merged = merged.dropna(subset=['daily_avg_cable_length_m', 'previous_avg_length_m'])
+    if merged.empty:
+        return []
+
+    merged['usage_today_m'] = (merged['previous_avg_length_m'] - merged['daily_avg_cable_length_m']).round(3)
+    zero_usage = merged[merged['usage_today_m'].abs() < 0.001].copy()
+    if zero_usage.empty:
+        return []
+
+    zero_usage = zero_usage.sort_values(['tenant', 'rack', 'drum_id'])
+    results = []
+    for _, row in zero_usage.iterrows():
+        results.append({
+            'drum_id': int(row['drum_id']),
+            'customer': row['tenant'],
+            'rack': row['rack'],
+            'product': row['product'],
+            'part_number': str(row['part_number']),
+            'today_length_m': float(row['daily_avg_cable_length_m']),
+            'previous_length_m': float(row['previous_avg_length_m']),
+            'usage_today_m': float(row['usage_today_m']),
+            'order_threshold_m': float(row['order_threshold_m']),
+            'avg_battery_voltage': float(row['avg_battery_voltage']),
+            'avg_signal_strength': float(row['avg_signal_strength']),
+            'date': row['date'].strftime('%Y-%m-%d'),
+        })
+    return results
+
+
 
 
 
