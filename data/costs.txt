@@ -1,0 +1,22 @@
+Parameter Wert Erklärung
+Versandkosten-Freigrenze 500 € Ab diesem Bestellwert liefert
+LAPP versandkostenfrei
+Versandkosten 25 € Pauschale pro Lieferung bei
+Unterschreitung der
+Freigrenze
+
+Mindestbestellwert 150 € netto Unter diesem Bestellwert
+wird ein Zuschlag von 20 €
+berechnet
+
+Schnittkosten 20 € Pauschale pro Schnitt bei
+Nicht-Standardlängen
+(Standardlängen: 100 m,
+500 m, 1.000 m)
+
+LAPP Industrial Rebels Hackathon 2026
+
+Parameter Wert Erklärung
+Sicherheitspuffer 1 Werktag Zusätzlicher Puffer bei der
+Bestellzeitpunkt-Berechnun
+g
